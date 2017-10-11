@@ -1,8 +1,8 @@
-import tensorflow as tf
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
+import tensorflow as tf
 
 class DCGAN(object):
     """
@@ -10,9 +10,7 @@ class DCGAN(object):
         We assume the input images are of size 64x64. 
 
         TODO
-            1. finish the discriminator implementation
             2. finish the compute_loss implementation
-                this requires calling the _create_discriminator twice, once with the generator output and another with the input_images
             3. Figure out the gradient flow while the training process occurs, in maybe main.py ?
             4. Create a pipeline class to feed data into the model
     """
@@ -21,19 +19,22 @@ class DCGAN(object):
         self.image_size = 64
         self.noise_size = 100
         self.lrelu_alpha = 0.2
+        self.num_channels = 3
         self._create_placeholders()
         self.generator_output = self._create_generator()
-        self.real_predictions = self._create_discriminator(inputs = self.input_images)
-        self.fake_predictions = self._create_discriminator(inputs = sel.generator_output)
+        self.real_predictions = self._create_discriminator(
+            inputs=self.input_images)
+        self.fake_predictions = self._create_discriminator(
+            inputs=self.generator_output, reuse=True)
         self._compute_loss()
 
     def _create_placeholders(self):
         self.input_images = tf.placeholder(
-            shape=[None, self.image_size, self.image_size],
-            type=tf.float32,
+            shape=[None, self.image_size, self.image_size, self.num_channels],
+            dtype=tf.float32,
             name="input_images")
         self.input_noise = tf.placeholder(
-            shape=[None, self.noise_size], type=tf.float32, name="input_noise")
+            shape=[None, self.noise_size], dtype=tf.float32, name="input_noise")
 
     def _create_generator(self):
         xav_init = tf.contrib.layers.xavier_initializer
@@ -45,9 +46,8 @@ class DCGAN(object):
                 self.input_noise,
                 shape=[tf.shape(fc_1)[0], 4, 4, 512],
                 name="reshaped_noise")
-
-            def _create_deconv_bnorm_block(self,
-                                           inputs,
+            print("reshaped_noise shape: {}".format(reshaped_noise.shape))
+            def _create_deconv_bnorm_block(inputs,
                                            name,
                                            filters,
                                            activation=tf.nn.relu):
@@ -57,6 +57,7 @@ class DCGAN(object):
                         filters=filters,
                         kernel_size=[5, 5],
                         strides=2,
+                        padding="same",
                         kernel_initializer=xav_init(),
                         name="deconv")
                     deconv = activation(deconv)
@@ -72,57 +73,71 @@ class DCGAN(object):
             print("bnorm_2 shape: {}".format(bnorm_2.shape))
 
             bnorm_3 = _create_deconv_bnorm_block(
-                inputs=bnorm_1, filters=64, name="block_3")
+                inputs=bnorm_2, filters=64, name="block_3")
             print("bnorm_3 shape: {}".format(bnorm_3.shape))
 
             bnorm_4 = _create_deconv_bnorm_block(
-                inputs=bnorm_1,
+                inputs=bnorm_3,
                 filters=3,
-                activation=tf.nn.tanh(),
+                activation=tf.nn.tanh,
                 name="block_4")
-            print("bnorm_4 shape: {}".format(bnorm_4.shape))            
+            print("bnorm_4 shape: {}".format(bnorm_4.shape))
             return bnorm_4
 
-    def _create_discriminator(self, inputs):  #  TODO(gokuls) need to figure out how to share weights
+    def _create_discriminator(
+            self,
+            inputs, reuse=False):  #  TODO(gokuls) need to figure out how to share weights
         xav_init = tf.contrib.layers.xavier_initializer
         bnorm = tf.layers.batch_normalization
-        with tf.variable_scope("discriminator", reuse = True):
+        with tf.variable_scope("discriminator", reuse=reuse):
 
-            def _create_conv_bnorm_block(self, inputs, name, filters):
-                with tf.variable_scope(name, reuse = True):
+            def _create_conv_bnorm_block(inputs, name, filters):
+                with tf.variable_scope(name, reuse=reuse):
                     conv = tf.layers.conv2d(
                         inputs=inputs,
                         filters=filters,
                         kernel_size=[5, 5],
                         strides=2,
+                        padding="same",
                         kernel_initializer=xav_init(),
                         name="conv")
 
                     conv = tf.maximum(conv, self.lrelu_alpha * conv)
                     bnorm_op = bnorm(conv, name="bnorm")
                     return bnorm_op
-            conv_1 = tf.layers.conv2d(inputs=inputs, filters = 64, kernel_size=[5,5], strides=2,
-                    kernel_initializer=xav_init(), name = "conv_1")
-            conv_1 = tf.maximum(conv, self.lrelu_alpha * conv_1)
+
+            conv_1 = tf.layers.conv2d(
+                inputs=inputs,
+                filters=64,
+                kernel_size=[5, 5],
+                strides=2,
+                kernel_initializer=xav_init(),
+                padding="same",
+                name="conv_1")
+            conv_1 = tf.maximum(conv_1, self.lrelu_alpha * conv_1)
             print("conv_1 shape: {}".format(conv_1.shape))
 
-            bnorm_1 = _create_conv_bnorm_block(inputs = conv_1, filters = 128, name = "block_1")
+            bnorm_1 = _create_conv_bnorm_block(
+                inputs=conv_1, filters=128, name="block_1")
             print("bnorm_1 shape: {}".format(bnorm_1.shape))
 
-            bnorm_2 = _create_conv_bnorm_block(inputs = bnorm_1, filters = 256, name = "block_2")
+            bnorm_2 = _create_conv_bnorm_block(
+                inputs=bnorm_1, filters=256, name="block_2")
             print("bnorm_2 shape: {}".format(bnorm_2.shape))
 
-            bnorm_3 = _create_conv_bnorm_block(inputs = bnorm_2, filters = 512, name = "block_3")
+            bnorm_3 = _create_conv_bnorm_block(
+                inputs=bnorm_2, filters=512, name="block_3")
             print("bnorm_3 shape: {}".format(bnorm_3.shape))
 
-           reshaped_bnorm_3 = tf.reshape(bnorm_3, shape = [tf.shape(bnorm_3)[0], 4*4*512], name = "reshaped_bnorm_3")
+            reshaped_bnorm_3 = tf.reshape(
+                bnorm_3,
+                shape=[tf.shape(bnorm_3)[0], 4 * 4 * 512],
+                name="reshaped_bnorm_3")
 
-           fc_1 = tf.layers.dense(inptus = reshaped_bnorm_3, units = 1, name = "fc_1")
-           return fc_1
+            fc_1 = tf.layers.dense(
+                inputs=reshaped_bnorm_3, units=1, name="fc_1")
+            print("fc_1 shape: {}".format(fc_1.shape))
+            return fc_1
 
     def _compute_loss(self):
         pass
-
-
-        
-
