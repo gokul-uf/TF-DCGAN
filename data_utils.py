@@ -28,7 +28,8 @@ class Processor(object):
             It is possible that at the edges you get batches smaller than
             self.batch_size. Please file an issue if this is an issue.
         """
-        files = glob(self.data_dir + "/data_batch_*").sort()
+        files = glob(self.data_dir + "/data_batch_*")
+        files.sort()
         assert len(files) == 5, "Expected 5 data_batch files, found {}".format(
             len(files))
         while (True):
