@@ -8,11 +8,12 @@ import tensorflow as tf
 class DCGAN(object):
     """
         Tensorflow implementation of DCGAN, with four CNN layers.
-        We assume the input images are of size 64x64. 
+        We assume the input images are of size 32x32.
     """
 
     def __init__(self):
-        self.image_size = 64
+        # self.image_size = 64
+        self.image_size = 32
         self.noise_size = 100
         self.lrelu_alpha = 0.2
         self.num_channels = 3
@@ -41,12 +42,17 @@ class DCGAN(object):
         xav_init = tf.contrib.layers.xavier_initializer
         bnorm = tf.layers.batch_normalization
         with tf.variable_scope("generator"):
+            """
             fc_1 = tf.layers.dense(
                 inputs=self.input_noise, units=4 * 4 * 512, name="fc_1")
+            """
+
+            fc_1 = tf.layers.dense(
+                inputs=self.input_noise, units=4 * 4 * 256, name="fc_1")
             reshaped_fc_1 = tf.reshape(
                 fc_1,
-                shape=[tf.shape(fc_1)[0], 4, 4, 512],
-                name="reshaped_noise")
+                shape=[tf.shape(fc_1)[0], 4, 4, 256],
+                name="reshapsed_noise")
 
             def _create_deconv_bnorm_block(inputs,
                                            name,
@@ -65,12 +71,15 @@ class DCGAN(object):
                     bnorm_op = bnorm(deconv, name="bnorm")
                     return bnorm_op
 
+            """
             bnorm_1 = _create_deconv_bnorm_block(
                 inputs=reshaped_fc_1, filters=256, name="block_1")
-
             bnorm_2 = _create_deconv_bnorm_block(
                 inputs=bnorm_1, filters=128, name="block_2")
+            """
 
+            bnorm_2 = _create_deconv_bnorm_block(
+                inputs=reshaped_fc_1, filters=128, name="block_2")
             bnorm_3 = _create_deconv_bnorm_block(
                 inputs=bnorm_2, filters=64, name="block_3")
 
@@ -117,7 +126,7 @@ class DCGAN(object):
 
             bnorm_2 = _create_conv_bnorm_block(
                 inputs=bnorm_1, filters=256, name="block_2")
-
+            """
             bnorm_3 = _create_conv_bnorm_block(
                 inputs=bnorm_2, filters=512, name="block_3")
 
@@ -128,6 +137,14 @@ class DCGAN(object):
 
             logits = tf.layers.dense(
                 inputs=reshaped_bnorm_3, units=1, name="fc_1")
+            """
+            reshaped_bnorm_2 = tf.reshape(
+                bnorm_2,
+                shape=[tf.shape(bnorm_2)[0], 4 * 4 * 256],
+                name="reshaped_bnorm_2")
+
+            logits = tf.layers.dense(
+                inputs=reshaped_bnorm_2, units=1, name="fc_1")
             fc_1 = tf.sigmoid(logits)
             return fc_1, logits
 
