@@ -43,8 +43,8 @@ class DCGAN(object):
         with tf.variable_scope("generator"):
             fc_1 = tf.layers.dense(
                 inputs=self.input_noise, units=4 * 4 * 512, name="fc_1")
-            reshaped_noise = tf.reshape(
-                self.input_noise,
+            reshaped_fc_1 = tf.reshape(
+                fc_1,
                 shape=[tf.shape(fc_1)[0], 4, 4, 512],
                 name="reshaped_noise")
 
@@ -66,7 +66,7 @@ class DCGAN(object):
                     return bnorm_op
 
             bnorm_1 = _create_deconv_bnorm_block(
-                inputs=reshaped_noise, filters=256, name="block_1")
+                inputs=reshaped_fc_1, filters=256, name="block_1")
 
             bnorm_2 = _create_deconv_bnorm_block(
                 inputs=bnorm_1, filters=128, name="block_2")
