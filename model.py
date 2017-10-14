@@ -48,11 +48,13 @@ class DCGAN(object):
             """
 
             fc_1 = tf.layers.dense(
-                inputs=self.input_noise, units=4 * 4 * 256, name="fc_1")
+                inputs=self.input_noise,
+                units=4 * 4 * 256,
+                kernel_initializer=xav_init(),
+                name="fc_1")
             reshaped_fc_1 = tf.reshape(
                 fc_1,
                 shape=[tf.shape(fc_1)[0], 4, 4, 256],
-                kernel_initializer=xav_init(),
                 name="reshapsed_noise")
 
             def _create_deconv_bnorm_block(inputs,
