@@ -32,7 +32,6 @@ class Processor(object):
         files.sort()
         assert len(files) == 5, "Expected 5 data_batch files, found {}".format(
             len(files))
-        print(files)
         while (True):
             for file in files:
                 tf.logging.info("Processing %s", file)
