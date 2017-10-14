@@ -32,6 +32,7 @@ class Processor(object):
         files.sort()
         assert len(files) == 5, "Expected 5 data_batch files, found {}".format(
             len(files))
+        print(files)
         while (True):
             for file in files:
                 tf.logging.info("Processing %s", file)
@@ -39,12 +40,11 @@ class Processor(object):
                 data = data["data"]
                 data = data.reshape(-1, 3, 32, 32)
                 data = data.transpose(0, 2, 3, 1)
-                print(data.shape)
-                print(len(data))
                 data = data.astype(np.float32)
-                data = (data - 127) / 127.0
-                assert np.minimum(data) >= -1
-                assert np.maximum(data) <= 1
+                data = (data - 127.0) / 127.0  # Not 127, as (255 / 127) > 1
+                assert np.min(data) >= -1, "min is {}".format(np.min(data))
+                assert np.max(data) <= 255 / 127, "max is {}".format(
+                    np.max(data))
                 for i in range(0, len(data), self.batch_size):
                     yield data[i:i + self.batch_size]
 
