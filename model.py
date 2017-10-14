@@ -52,6 +52,7 @@ class DCGAN(object):
             reshaped_fc_1 = tf.reshape(
                 fc_1,
                 shape=[tf.shape(fc_1)[0], 4, 4, 256],
+                kernel_initializer=xav_init(),
                 name="reshapsed_noise")
 
             def _create_deconv_bnorm_block(inputs,
@@ -144,7 +145,10 @@ class DCGAN(object):
                 name="reshaped_bnorm_2")
 
             logits = tf.layers.dense(
-                inputs=reshaped_bnorm_2, units=1, name="fc_1")
+                inputs=reshaped_bnorm_2,
+                units=1,
+                kernel_initializer=xav_init(),
+                name="fc_1")
             fc_1 = tf.sigmoid(logits)
             return fc_1, logits
 
